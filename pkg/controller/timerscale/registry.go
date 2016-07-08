@@ -5,7 +5,7 @@ import (
 	//"errors"
 	"fmt"
 	"path"
-	//"regexp"
+        //"regexp"
 	//	"bytes"
 	//	"os/exec"
 	//	"strconv"
@@ -141,7 +141,7 @@ func (etr *EtcdTimerScaleRegistry) GetTSs(ctx context.Context, network string) (
 		}
 
 		s := node.Key
-		log.Info("Current key is :", s)
+		log.Info("Current Key is : ", s)
 		scalers = append(scalers, s)
 	}
 

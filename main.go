@@ -11,6 +11,7 @@ import (
         "strings"
 
 	"github.com/ansend/sigmacontroller/pkg/controller/timerscale"
+//        "github.com/ansend/sigmacontroller/pkg/kubeclient"
 	log "github.com/golang/glog"
 	"golang.org/x/net/context"
 )
@@ -43,6 +44,8 @@ func init() {
 
 func main() {
 
+ //       client := kubeclient.Get()
+  //      fmt.Println(client)
 	// glog will log to tmp files by default. override so all entries
 	// can flow into journald (if running under systemd)
 	flag.Set("logtostderr", "true")

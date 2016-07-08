@@ -31,7 +31,7 @@ func ScalerRunRc(tsspec *TSSpec) {
 			currNum, err := getCurrentPodNum(tsspec)
 			
                         if err != nil {
-			     log.Warning("Fail to Get Current Pod number for :", targetResource, err)
+			     log.Warning("Fail to Get Current Pod number for : ", targetResource, err)
                              return
 			}
 			if currNum != val.Num {
@@ -64,7 +64,7 @@ func runScaler(namespace string, resource string, num uint) error {
 	strns := fmt.Sprintf("--namespace=%s", namespace)
 
 	log.Info("start to run ", strrep, strnum)
-	cmd := exec.Command("kubectl", "scale", strrep, "replicationcontrollers", strns, resource)
+	cmd := exec.Command("kubectl", "-s", KUBE_LOCAL_APISERVER, "scale", strrep, "replicationcontrollers", strns, resource)
 
 	strcmd := "kubectl" + "scale" + strrep + "replicationcontrollers" + strns + resource
 	var out bytes.Buffer
@@ -84,7 +84,7 @@ func runScaler(namespace string, resource string, num uint) error {
 func getCurrentPodNum(tsspec *TSSpec) (uint, error) {
 
 	strns := fmt.Sprintf("--namespace=%s", tsspec.NameSpace)
-	cmd := exec.Command("kubectl", "get", "rc", tsspec.SubResource, strns)
+	cmd := exec.Command("kubectl", "-s", KUBE_LOCAL_APISERVER, "get", "rc", tsspec.SubResource, strns)
 
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -93,7 +93,7 @@ func getCurrentPodNum(tsspec *TSSpec) (uint, error) {
 		return 0, err
 	}
 
-	numMatcher := regexp.MustCompile("(?m)" + `^` + "time-scale" + `\s+\S+\s+\S+\s+\S+\s+([0-9]+)`)
+	numMatcher := regexp.MustCompile("(?m)" + `^` + tsspec.SubResource + `\s+\S+\s+\S+\s+\S+\s+([0-9]+)`)
 	result := numMatcher.FindStringSubmatch(out.String())
 
 	if result == nil {

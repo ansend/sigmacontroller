@@ -12,7 +12,7 @@ import (
 	"bytes"
 	"os/exec"
 	//	etcd "github.com/coreos/etcd/client"
-	//       "github.com/coreos/etcd/pkg/transport"
+//       "github.com/coreos/etcd/pkg/transport"
 	log "github.com/golang/glog"
 	//	"golang.org/x/net/context"
 )
@@ -60,6 +60,7 @@ func validatePodNum(tsspec *TSSpec) error {
 
 // Make sure no overlap  between any 2 of the timespans
 // for 2 of the spans, following condition make sure no overlap
+// startdate  <= enddate
 // startdate1 <=enddate2 and enddate1>=startdate2
 
 func validateTimeSpan(tsspec *TSSpec) error {
@@ -67,6 +68,11 @@ func validateTimeSpan(tsspec *TSSpec) error {
 	num := len(tsspec.TimeSpanList)
 
 	for i := 0; i < num-1; i++ {
+
+                if(tsspec.TimeSpanList[i].BeginTime.Unix() >= tsspec.TimeSpanList[i].EndTime.Unix()){
+                       return fmt.Errorf("%s End Time is Before Start Time", tsspec.SubResource)
+                }
+              
 		for j := i + 1; j < num; j++ {
 
 			if (tsspec.TimeSpanList[i].BeginTime.Unix() <= tsspec.TimeSpanList[j].EndTime.Unix()) &&
@@ -104,12 +110,15 @@ func validateResource(tsspec *TSSpec) error {
 	*/
         strns := fmt.Sprintf("--namespace=%s", tsspec.NameSpace)
 	pattern := ".*" + tsspec.SubResource + ".*"
-	cmd := exec.Command("kubectl", "get", "pods",strns)
+
+        //There should be no white space in the argument of the command,otherwise error.
+	cmd := exec.Command("kubectl", "-s", KUBE_LOCAL_APISERVER, "get", "pods",strns)
+
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
-		return err
+		return fmt.Errorf("Kubectl Failed Due to %s ", err.Error())
 	}
 
 	matched, err := regexp.MatchString(pattern, out.String())

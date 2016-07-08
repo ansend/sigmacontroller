@@ -1,0 +1,30 @@
+piVersion: v1
+kind: Pod
+metadata:
+  name: sigmactler
+  namespace: kube-system
+  labels:
+    k8s-app: heapster
+    version: v6
+spec:
+  hostNetwork: true
+  containers:
+  - image: 61.160.36.122:8080/sigmas/sigmactler:v1.1.0
+    name: sigmactler 
+    command: 
+    - /usr/local/bin/sigmactler
+    ports:
+    - containerPort: 8051
+      hostPort: 8051
+      name: test
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+    volumeMounts:
+    - mountPath: /var/lib/sigmactler
+      name: datadir
+  volumes:
+  - hostPath:
+      path: /data/sigmactler
+    name: datadir
