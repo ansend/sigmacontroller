@@ -2,15 +2,16 @@ package timerscale
 
 import (
 	"encoding/json"
+        "fmt"
+        "path"
+        "sync"
+        "time"
+
 	//"errors"
-	"fmt"
-	"path"
         //"regexp"
-	//	"bytes"
-	//	"os/exec"
-	//	"strconv"
-	"sync"
-	"time"
+	//"bytes"
+	//"os/exec"
+	//"strconv"
 
 	etcd "github.com/coreos/etcd/client"
 	"github.com/coreos/etcd/pkg/transport"
@@ -50,9 +51,14 @@ type TimeSpan struct {
 	EndTime   time.Time
 }
 
+// Field appears in JSON as key "Field" (the default), but
+// the field is skipped if empty.
+// Note the leading comma.  *OTHERWISE THE FIELD WILL BE IGNORED*
+// Field int `json:",omitempty"`
+
 type TSSpec struct {
-	NameSpace    string `json:"omitempty"`
-	DefaultNum   uint   `json:"omitempty"`
+	NameSpace    string  `json:",omitempty"`  //without the comma, the field will be ignored
+	DefaultNum   uint    `json:",omitempty"`
 	SubResource  string
 	TimeSpanList []TimeSpan
 }
@@ -131,6 +137,15 @@ func (etr *EtcdTimerScaleRegistry) GetTSs(ctx context.Context, network string) (
 
 		spec, err := nodeToTSSpec(node)
 
+                if spec.DefaultNum == 0 {
+                    cnum, cerr := getCurrentPodNum(spec)
+                    
+                    if(cerr == nil) {
+                        spec.DefaultNum = cnum
+                    }
+                }
+       
+
 		if err == nil {
 		
 	               GTimeScalerList = append(GTimeScalerList, spec)
@@ -141,11 +156,11 @@ func (etr *EtcdTimerScaleRegistry) GetTSs(ctx context.Context, network string) (
 		}
 
 		s := node.Key
-		log.Info("Current Key is : ", s)
+		log.Info("Current Key Is : ", s)
 		scalers = append(scalers, s)
 	}
 
-	fmt.Println("current global timer list:",GTimeScalerList,len(GTimeScalerList))
+	log.Info("Current Global Timer List And Num:",GTimeScalerList,len(GTimeScalerList))
 
 	return scalers, resp.Index, nil
 }
@@ -158,7 +173,6 @@ func nodeToTSSpec(node *etcd.Node) (*TSSpec, error) {
 
 		return nil, err
 	}
-
 	var err error
 
 	timeForm := "2006-01-02 15:04:05"
@@ -177,14 +191,12 @@ func nodeToTSSpec(node *etcd.Node) (*TSSpec, error) {
 		valref.EndTime, err = time.ParseInLocation(timeForm, val.End, time.Local)
 
 		if err != nil {
-			fmt.Println("Error to parse the time")
+			log.Info("Error to Parse Time String", val.Begin, val.End)
 			return nil, err
 		}
 
 	}
 
-	//.fmt.Println("print the json text ")
-	//fmt.Println(attrs)
 
 	return attrs, nil
 }

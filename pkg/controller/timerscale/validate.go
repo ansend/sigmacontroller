@@ -1,20 +1,22 @@
 package timerscale
 
 import (
-	//	"encoding/json"
+
+        "fmt"
+        "regexp"
+        "bytes"
+        "os/exec"
+        log "github.com/golang/glog"
+
+	//"encoding/json"
 	//"errors"
-	"fmt"
-	//	"path"
-	"regexp"
-	//	"sync"
-	//       "time"
-	//      "strconv"
-	"bytes"
-	"os/exec"
-	//	etcd "github.com/coreos/etcd/client"
-//       "github.com/coreos/etcd/pkg/transport"
-	log "github.com/golang/glog"
-	//	"golang.org/x/net/context"
+	//"path"
+	//"sync"
+	//"time"
+	//"strconv"
+	//etcd "github.com/coreos/etcd/client"
+        //"github.com/coreos/etcd/pkg/transport"
+	//"golang.org/x/net/context"
 )
 
 const (
@@ -97,22 +99,11 @@ func validateTimeSpan(tsspec *TSSpec) error {
 
 func validateResource(tsspec *TSSpec) error {
 
-	/*	re := regexp.MustCompile("resourcename")
-			str := `fldjlafjldja
-			        fdjklfjdlafdafdfdafa
-		                fdjalfdjla resourcename
-		                fdjlasfjd resourcename fdjla
-		                fldlfjlda resourcename fdas `
-
-			matches := re.FindAllString(str, -1)
-			fmt.Println(re.FindAllString(str, -1))
-			fmt.Println(len(matches))
-	*/
         strns := fmt.Sprintf("--namespace=%s", tsspec.NameSpace)
 	pattern := ".*" + tsspec.SubResource + ".*"
 
         //There should be no white space in the argument of the command,otherwise error.
-	cmd := exec.Command("kubectl", "-s", KUBE_LOCAL_APISERVER, "get", "pods",strns)
+	cmd := exec.Command("kubectl", "-s", KUBE_LOCAL_APISERVER, "get", "rc",strns)
 
 	var out bytes.Buffer
 	cmd.Stdout = &out

@@ -1,40 +1,43 @@
 package timerscale
 
 import (
-	//	"encoding/json"
-	//"errors"
 	"fmt"
-	//	"path"
 	"bytes"
 	"os/exec"
 	"regexp"
 	"strconv"
-	//	"sync"
 	"time"
-	//	etcd "github.com/coreos/etcd/client"
-	//	"github.com/coreos/etcd/pkg/transport"
 	log "github.com/golang/glog"
-	//	"golang.org/x/net/context"
+
+        //"encoding/json"
+        //"errors"
+        //"path"
+        //"sync"
 )
 
 func ScalerRunRc(tsspec *TSSpec) { 
 
         targetResource := tsspec.SubResource
 	
+        found := false
+
         now := time.Now()
+
+        currNum, err := getCurrentPodNum(tsspec)
+
+        if err != nil {
+             log.Warning("Fail to Get Current Pod number for : ", targetResource, err)
+             return
+        }
+
 
 	for _, val := range tsspec.TimeSpanList {
 
 		if now.After(val.BeginTime) && now.Before(val.EndTime) {
 
                         log.Info("Start to Run Scaler for RC :", targetResource)
-			currNum, err := getCurrentPodNum(tsspec)
 			
-                        if err != nil {
-			     log.Warning("Fail to Get Current Pod number for : ", targetResource, err)
-                             return
-			}
-			if currNum != val.Num {
+                        if currNum != val.Num {
 
 				err := runScaler(tsspec.NameSpace, targetResource, val.Num)
                                 if err != nil {
@@ -46,9 +49,24 @@ func ScalerRunRc(tsspec *TSSpec) {
                                  
 			}
 
+                        found = true
+
 			break
 		}
 	}
+
+        // No time span located in current list, scale to default num instance.
+
+        if !found && (currNum != tsspec.DefaultNum){
+            
+             err := runScaler(tsspec.NameSpace, targetResource, tsspec.DefaultNum)
+             if err != nil {
+                   log.Warning("Fail to Scale for :", targetResource, err)
+             }else{
+                   log.Infof("Success to Scale to Default Num  %s from %d to %d", targetResource,currNum, tsspec.DefaultNum)
+             }
+
+        }
 
 	return 
 
@@ -58,12 +76,12 @@ func ScalerRunRc(tsspec *TSSpec) {
 
 func runScaler(namespace string, resource string, num uint) error {
 
-	strnum := strconv.Itoa(int(num))
+	//strnum := strconv.Itoa(int(num))
 
 	strrep := fmt.Sprintf("--replicas=%d", num)
 	strns := fmt.Sprintf("--namespace=%s", namespace)
 
-	log.Info("start to run ", strrep, strnum)
+	log.Info("Start to Run ", strrep)
 	cmd := exec.Command("kubectl", "-s", KUBE_LOCAL_APISERVER, "scale", strrep, "replicationcontrollers", strns, resource)
 
 	strcmd := "kubectl" + "scale" + strrep + "replicationcontrollers" + strns + resource
